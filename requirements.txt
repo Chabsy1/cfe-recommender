@@ -1,7 +1,10 @@
 Celery
 Django
+django-allauth
 django-celery-beat 
 django-celery-results # currently requires Django 4.0 or older
+django-htmx
 Faker
 python-decouple
 redis
+scikit-surprise
