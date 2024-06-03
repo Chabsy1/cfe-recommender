@@ -5,26 +5,27 @@ from django.core.files.base import File
 from django.db.models import F
 from django.contrib.contenttypes.models import ContentType
 
-
 from movies.models import Movie
 from ratings.models import Rating
 
 from .models import Export, ExportDataType
 
 def export_dataset(dataset, fname='dataset.csv', type=ExportDataType.RATINGS):
-    with tempfile.NamedTemporaryFile(mode='r+') as temp_f:
+    with tempfile.NamedTemporaryFile(mode='r+', encoding='utf-8', newline='') as temp_f:
         try:
             keys = dataset[0].keys()
-        except:
+        except IndexError:
             return
         dict_writer = csv.DictWriter(temp_f, keys)
         dict_writer.writeheader()
-        dict_writer.writerows(dataset)
-        temp_f.seek(0) # go to the top of the file
-        # write Export model
+        for row in dataset:
+            # Encode each string in the row to utf-8 before writing to CSV
+            encoded_row = {key: str(value).encode('utf-8').decode('utf-8', 'ignore') if isinstance(value, str) else value for key, value in row.items()}
+            dict_writer.writerow(encoded_row)
+        temp_f.seek(0) # Go to the beginning of the file
+        # Write Export model
         obj = Export.objects.create(type=type)
         obj.file.save(fname, File(temp_f))
-
 
 def generate_rating_dataset(app_label='movies', model='movie', to_csv=True):
     ctype = ContentType.objects.get(app_label=app_label, model=model)
@@ -42,5 +43,3 @@ def generate_movies_dataset(to_csv=True):
     if to_csv:
         export_dataset(dataset=dataset, fname='movies.csv', type=ExportDataType.MOVIES)
     return dataset
-
-
